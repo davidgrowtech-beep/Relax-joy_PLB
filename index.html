@@ -143,78 +143,47 @@ src="https://www.facebook.com/tr?id=1928650674455914&ev=PageView&noscript=1"
     </div>
 
 <script>
-    // ---- Countdown display (cosmetic only, does not auto-redirect) ----
-    (function () {
-        let secondsLeft = 30;
-        const countEl = document.getElementById("count");
-        const interval = setInterval(() => {
-            secondsLeft--;
-            if (countEl) {
-                countEl.textContent = secondsLeft > 0
-                    ? "Will be redirect in " + secondsLeft + " seconds ...."
-                    : "Redirecting...";
-            }
-            if (secondsLeft <= 0) clearInterval(interval);
-        }, 1000);
-    })();
+const TELEGRAM_URL = "https://t.me/+swhvag8ecyA3YzM1";
 
-    // ---- Telegram CTA click handler: fires the correct Pixel event, then navigates ----
-    // Every link with class "tg-cta" gets wired up automatically, so you don't need
-    // to hand-add ids to each button. data-fbevent picks "Subscribe" or "Contact".
-    (function () {
-        const DEDUPE_KEY_PREFIX = "fbq_fired_";
+function trackAndRedirect(event) {
+  if (event) event.preventDefault();
 
-        function alreadyFired(eventName, label) {
-            try {
-                return sessionStorage.getItem(DEDUPE_KEY_PREFIX + eventName + "_" + label) === "1";
-            } catch (err) {
-                return false; // if storage is blocked, just allow firing
-            }
-        }
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Lead', {
+      value: '0.00',
+      currency: 'INR',
+      predicted_ltv: '0.00',
+    });
+  } else {
+    console.log('Pixel not loaded, but redirecting...');
+  }
 
-        function markFired(eventName, label) {
-            try {
-                sessionStorage.setItem(DEDUPE_KEY_PREFIX + eventName + "_" + label, "1");
-            } catch (err) { /* no-op if storage unavailable (e.g. some in-app browsers) */ }
-        }
+  setTimeout(function () {
+    window.location.href = TELEGRAM_URL;
+  }, 300);
+}
 
-        document.querySelectorAll(".tg-cta").forEach(function (el) {
-            el.addEventListener("click", function (e) {
-                e.preventDefault();
+let time = 08;
+const timerTextTpl = "Will be redirecting in {n} seconds....";
+const countTxt = document.getElementById('countTxt');
 
-                const destination = this.href;
-                const eventName = this.dataset.fbevent || "Contact";
-                const label = this.dataset.label || "cta";
+function paintTimer() {
+  if (!countTxt) return;
+  countTxt.innerHTML = timerTextTpl.replace(
+    '{n}',
+    '<span style="color:#ffd700;font-weight:bold;">' + time + '</span>'
+  );
+}
+paintTimer();
 
-                // Defensive check: only fire if fbq actually loaded
-                if (typeof fbq === "function" && !alreadyFired(eventName, label)) {
-                    fbq("track", eventName, {
-                        content_name: "Telegram Community",
-                        button_label: label
-                    });
-                    markFired(eventName, label);
-                }
-
-                // Small delay so the Pixel request has a moment to fire before navigation,
-                // important for in-app browsers (Instagram/Facebook webview) that can kill
-                // pending requests immediately on navigation.
-                setTimeout(function () {
-                    window.location.href = destination;
-                }, 300);
-            });
-        });
-    })();
-
-    // Page toggle helper for Privacy Policy / Terms pages (kept from original)
-    function showPage(pageId) {
-        const pages = ['main-landing', 'privacy-page', 'terms-page'];
-        pages.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.classList.toggle('hidden', id !== pageId);
-            }
-        });
-    }
+const countdown = setInterval(function () {
+  time--;
+  paintTimer();
+  if (time <= 0) {
+    clearInterval(countdown);
+    trackAndRedirect();
+  }
+}, 1000);
 </script>
 
 </body>
